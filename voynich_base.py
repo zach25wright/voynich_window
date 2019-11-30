@@ -139,6 +139,8 @@ def gen_comps(str_list_output, neg_dist=1):
     for paragraph in str_list_output:
         i = 0
         n = 10
+        paragraph.replace('<->', '.')
+        paragraph.replace('<$>', '')
         paragraph = paragraph.split('.')
         while i < len(paragraph) - n:
             window = paragraph[i:i + n]
