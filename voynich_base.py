@@ -6,6 +6,7 @@ from operator import itemgetter
 import pandas as pd
 from parse import *
 import statistics
+import matplotlib.pyplot as plt
 import numpy as np
 
 
@@ -132,7 +133,7 @@ def create_df(file, hand):
         str_list_output = convert_to_strings(df)
     return str_list_output
 
-def gen_comps(str_list_output):
+def gen_comps(str_list_output, neg_dist=1):
     word_comp = defaultdict(list)
     comp_count = defaultdict(lambda: 0)
     for paragraph in str_list_output:
@@ -141,23 +142,48 @@ def gen_comps(str_list_output):
         paragraph = paragraph.split('.')
         while i < len(paragraph) - n:
             window = paragraph[i:i + n]
-            for k, word in enumerate(window):
-                for m, word_2 in enumerate(window[(k+1):]):
-                    if comp_count[word, word_2] == 0:
-                        if comp_count[word_2, word] == 0:
-                            word_comp[word, word_2].append(m)
-                            comp_count[word,word_2] += 1
-                        else:
-                            word_comp[word_2, word].append(-m)
-                            comp_count[word_2, word] += 1
+            word1 = window[0]
+            for k, word_2 in enumerate(window[1:]):
+                if comp_count[word1, word_2] == 0:
+                    if comp_count[word_2, word1] == 0:
+                        word_comp[word1, word_2].append(k)
+                        comp_count[word1,word_2] += 1
                     else:
-                        word_comp[word, word_2].append(m)
-                        comp_count[word,word_2] += 1
+                        word_comp[word_2, word1].append(neg_dist * k)
+                        comp_count[word_2, word1] += 1
+                else:
+                    word_comp[word1, word_2].append(k)
+                    comp_count[word1,word_2] += 1
+            i += 1
+        for k, word_2 in enumerate(paragraph[i:]):
+            for m, word_2 in enumerate(paragraph[(i+k+1):]):
+                if comp_count[word1, word_2] == 0:
+                    if comp_count[word_2, word1] == 0:
+                        word_comp[word1, word_2].append(m)
+                        comp_count[word1,word_2] += 1
+                    else:
+                        word_comp[word_2, word1].append(neg_dist * m)
+                        comp_count[word_2, word1] += 1
+                else:
+                    word_comp[word1, word_2].append(m)
+                    comp_count[word1,word_2] += 1
+
+            # for k, word in enumerate(window):
+            #     for m, word_2 in enumerate(window[(k+1):]):
+            #         if comp_count[word, word_2] == 0:
+            #             if comp_count[word_2, word] == 0:
+            #                 word_comp[word, word_2].append(m)
+            #                 comp_count[word,word_2] += 1
+            #             else:
+            #                 word_comp[word_2, word].append(neg_dist * m)
+            #                 comp_count[word_2, word] += 1
+            #         else:
+            #             word_comp[word, word_2].append(m)
+            #             comp_count[word,word_2] += 1
             # for comb in combinations(window, 3):
             #
             #     word_comp[comb] += 2
             #     word_comb[comb].append(dist)
-            i += 1
     return word_comp, comp_count
 
 def analysis(word_comp, comp_count, n=1000):
@@ -172,6 +198,8 @@ def analysis(word_comp, comp_count, n=1000):
     vis = top_comps[pair]
 
     stdevs = {a:statistics.stdev(top_comps[a]) for a in top_comps.keys()}
+    median_dist = {a:statistics.median(top_comps[a]) for a in top_comps.keys()}
+
     lowest_stdevs = heapq.nsmallest(10, stdevs)
     highest_stdevs = heapq.nlargest(10, stdevs)
     
@@ -183,6 +211,7 @@ def analysis(word_comp, comp_count, n=1000):
     x = [levenshteins[item] for item in stdevs.keys()]
     y = [stdevs[item] for item in stdevs.keys()]
     y1 = [comp_count[item] for item in stdevs.keys()]
+    y2 = [median_dist[item] for item in stdevs.keys()]
 
     return topitemsdict, stdevs, levenshteins
 
