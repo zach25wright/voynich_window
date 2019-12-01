@@ -6,8 +6,11 @@ from operator import itemgetter
 import pandas as pd
 from parse import *
 import statistics
+import matplotlib.mlab as mlab
 import matplotlib.pyplot as plt
 import numpy as np
+
+import csv
 
 
 def parse_line(line):
@@ -139,8 +142,8 @@ def gen_comps(str_list_output, neg_dist=1):
     for paragraph in str_list_output:
         i = 0
         n = 10
-        paragraph.replace('<->', '.')
-        paragraph.replace('<$>', '')
+        paragraph = paragraph.replace('<->', '.')
+        paragraph = paragraph.replace('<$>', '')
         paragraph = paragraph.split('.')
         while i < len(paragraph) - n:
             window = paragraph[i:i + n]
@@ -228,7 +231,77 @@ def main(hand='Both'):
     word_comp, comp_count = gen_comps(str_list_output)
     topitems, stdevs, levenshteins = analysis(word_comp, comp_count)
 
+
+
+    with open('comp_count.csv','w') as out:
+        csv_out=csv.writer(out)
+        csv_out.writerow(['name','num', 'count'])
+        csv_out.writerows(zip([item[0] for item in comp_count],[item[1] for item in comp_count],comp_count.values()))
+
+    with open('levenshteins.csv','w') as out:
+        csv_out=csv.writer(out)
+        csv_out.writerow(['name','num', 'count'])
+        csv_out.writerows(zip([item[0] for item in levenshteins],[item[1] for item in levenshteins],levenshteins.values()))
+
+    with open('word_comp.csv','w') as out:
+        csv_out=csv.writer(out)
+        csv_out.writerow(['name','num', 'count'])
+        csv_out.writerows(zip([item[0] for item in word_comp],[item[1] for item in word_comp],word_comp.values()))
+
+    with open('topitems.csv','w') as out:
+        csv_out=csv.writer(out)
+        csv_out.writerow(['name','num', 'count'])
+        csv_out.writerows(zip([item[0] for item in topitems],[item[1] for item in topitems],topitems.values()))
+
+    with open('distributionTop10.csv','w') as out:
+        csv_out=csv.writer(out)
+        csv_out.writerow(word_comp['chol', 'daiin'])
+        csv_out.writerow(word_comp['ol', 'daiin'])
+        csv_out.writerow(word_comp['qokedy', 'shedy'])
+        csv_out.writerow(word_comp['shedy', 'chedy'])
+        csv_out.writerow(word_comp['daiin', 'chor'])
+        csv_out.writerow(word_comp['chedy', 'ol'])
+        csv_out.writerow(word_comp['or', 'aiin'])
+        csv_out.writerow(word_comp['shedy', 'ol'])
+        csv_out.writerow(word_comp['chedy', 'qokeedy'])
+        csv_out.writerow(word_comp['daiin', 's'])
+
+    names = ('chol', 'daiin', 'ol', 'daiin', 'qokedy', 'shedy', 'shedy','chedy','daiin','chor','chedy','ol','or',
+        'aiin','shedy','ol','chedy','qokeedy','daiin','s')
+    num_bins = 9
+    for i in range(10):
+        fig = plt.hist(word_comp[names[2*i], names[2*i+1]], num_bins, facecolor='gray')
+        plt.title(names[2*i]+"_"+names[2*i+1])
+        plt.savefig("histograms/"+names[2*i]+"_"+names[2*i+1]+".png")
+
+
+    top30 = list(topitems.values())[0:100]
+    plt.clf()
+    fig=plt.bar(range(100),top30)
+    plt.title("Total Comparisons (100)")
+    plt.savefig("totalcomp100.png")
+
+    plt.clf()
+    fig=plt.hist(list(levenshteins.values()))
+    plt.title("Levenshtein Frequencies")
+    plt.savefig("levenshtein_freq")
+
+    lev_array = [None]*10
+    for i in range(10):
+        lev_array[i]=levenshteins[names[2*i], names[2*i+1]]
+
+    plt.clf()
+    fig=plt.hist(list(lev_array), 4)
+    plt.title("Levenshtein Frequencies Top 10")
+    plt.savefig("levenshtein_freq_10")
+    plt.show()
+
+
+ #   with open('distributionTop10.csv','w') as in:
+  #      with open('distpolished.csv','w') as out:
+
     return topitems, comp_count, word_comp, stdevs, levenshteins
+
 
 if __name__ == "__main__":
     topitems, comp_count, word_comp, stdevs, levenshteins = main()
